@@ -1,0 +1,37 @@
+| Test code
+p MozreplClient.run "document.title"
+p MozreplClient.run "alert(11)"
+
+| Code
+- ./
+  - mozrepl_client.rb
+
+|| 
+class MozreplClient
+  def self.read s
+    r = ''
+    loop do
+     r << s.readchar.chr
+     # break if r =~ /repl\d*> /
+     break if r =~ /^repl\d*> $/
+    end
+    r.sub /^repl\d*> /, ''
+  end
+
+  def self.run js, options={}
+    s = TCPSocket::new("localhost", "4242")
+
+    initial_crap = read s
+    repl = initial_crap[/repl\d+/] || 'repl'
+    unless options[:browser]
+      s.puts("#{repl}.enter(content.wrappedJSObject)\n;")
+      read s
+    end
+
+    s.puts js
+    txt = read s
+    s.close
+    txt.strip
+  end
+end
+
